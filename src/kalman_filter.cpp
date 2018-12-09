@@ -3,7 +3,7 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-// Please note that the Eigen library does not initialize 
+// Please note that the Eigen library does not initialize
 // VectorXd or MatrixXd objects with zeros upon creation.
 
 KalmanFilter::KalmanFilter() {}
@@ -20,23 +20,86 @@ void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
   Q_ = Q_in;
 }
 
+
 void KalmanFilter::Predict() {
   /**
   TODO:
     * predict the state
   */
+  x_ = F_ * x_;
+  P_ = F_ * P_ * F_.transpose() + Q_;
+
 }
 
+// Laser measurements:
 void KalmanFilter::Update(const VectorXd &z) {
   /**
   TODO:
     * update the state by using Kalman Filter equations
   */
+
+    VectorXd y = z - H_ * x_;
+
+
+    MatrixXd S = H_ * P_ * H_.transpose() + R_;
+
+    MatrixXd K = P_ * H_.transpose() * S.inverse();
+
+    x_ = x_ + K * y;
+
+    MatrixXd I = MatrixXd::Identity(x_.size(),x_.size());
+    P_ = (I - K * H_) * P_;
+
 }
 
+// Radar measurements:
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
   /**
   TODO:
     * update the state by using Extended Kalman Filter equations
   */
+
+    float px = x_(0);
+    float py = x_(1);
+    float vx = x_(2);
+    float vy = x_(3);
+
+    VectorXd h_fxn(3);
+    h_fxn(0) = sqrt(px*px + py*py);
+
+    // Checking for zero division error
+    if (h_fxn(0) < 0.000001) {
+      px += 0.001;
+      py += 0.001;
+      h_fxn(0) = sqrt(px*px + py*py);
+    }
+
+
+    h_fxn(1) = atan2(py,px);
+    h_fxn(2) = (px*vx + py*vy) / h_fxn(0);
+
+
+    VectorXd y = z - h_fxn;
+
+
+    while (y(1) < -M_PI) {
+      y(1) += 2*M_PI;
+    }
+    while (y(1) > M_PI) {
+      y(1) -= 2*M_PI;
+    }
+
+
+    MatrixXd S = H_ * P_ * H_.transpose() + R_;
+
+
+    MatrixXd K = P_ * H_.transpose() * S.inverse();
+
+    // Estimating new position x_
+    x_ = x_ + K * y;
+
+    // Estimating new covariance P_
+    MatrixXd I = MatrixXd::Identity(x_.size(),x_.size());
+    P_ = (I - K * H_) * P_;
+
 }
