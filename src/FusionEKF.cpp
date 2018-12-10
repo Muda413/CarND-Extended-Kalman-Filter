@@ -14,7 +14,7 @@ using std::vector;
 FusionEKF::FusionEKF() {
   is_initialized_ = false;
 
-  prev_timestamp = 0;
+  previous_timestamp_ = 0;
 
   // initializing matrices
   R_laser_ = MatrixXd(2, 2);
@@ -70,7 +70,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
 
         //timestamp of first measurement
-    prev_timestamp = measurement_pack.timestamp_;
+    previous_timestamp_ = measurement_pack.timestamp_;
 
     // P matrix - covariance matrix initialization
     ekf_.P_ = MatrixXd(4,4);
@@ -130,8 +130,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
 
  // Calculating change in time and updating state transition matrix
-   float dt = (measurement_pack.timestamp_ - prev_timestamp) * 0.000001;
-   prev_timestamp = measurement_pack.timestamp_;
+   float dt = (measurement_pack.timestamp_ - previous_timestamp_) * 0.000001;
+   previous_timestamp_ = measurement_pack.timestamp_;
    ekf_.F_(0,2) = dt;
    ekf_.F_(1,3) = dt;
 
